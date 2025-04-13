@@ -110,6 +110,7 @@
       margin-top: 30px;
       position: relative;
       height: 400px;
+      display: none; /* Initially hidden */
     }
     .bullish, .bearish {
       font-weight: bold;
@@ -314,6 +315,10 @@
     }
 
     async function loadCandleChart() {
+      if (!selectedSymbol) return;
+      
+      document.getElementById("chartContainer").style.display = 'block';
+      
       const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=50`;
       const res = await fetch(url);
       const data = await res.json();
@@ -338,6 +343,7 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             title: {
               display: true,
@@ -346,6 +352,14 @@
             tooltip: {
               mode: 'index',
               intersect: false
+            }
+          },
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'hour'
+              }
             }
           }
         }
