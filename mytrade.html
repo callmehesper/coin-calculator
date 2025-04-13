@@ -11,15 +11,78 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.1.0/dist/chartjs-chart-financial.min.js"></script>
 
   <style>
-    /* [Same CSS as before — omitted here for brevity] */
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+    .chart-container {
+      margin-top: 30px;
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    input, select, button {
+      padding: 8px;
+      margin: 5px;
+    }
+    .bullish {
+      color: lime;
+    }
+    .bearish {
+      color: red;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- [Same HTML layout as before — keep yours unchanged here] -->
+    <h2>My Trade Calculator</h2>
+    
+    <input type="text" id="symbolSearch" placeholder="Search coin..." oninput="filterSymbols()" />
+    <select id="symbolList" size="5" style="display:none;"></select>
+    <div id="marketBehavior"></div><br>
+
+    <label>Market Price:</label>
+    <input type="text" id="marketPrice" disabled /><br>
+
+    <label>Entry Price:</label>
+    <input type="number" id="entryPrice" /><br>
+
+    <label>Margin ($):</label>
+    <input type="number" id="margin" /><br>
+
+    <label>Wallet Balance ($):</label>
+    <input type="number" id="wallet" /><br>
+
+    <label>Leverage:</label>
+    <input type="number" id="leverage" /><br>
+
+    <label>TP Price:</label>
+    <input type="number" id="tpPrice" /><br>
+
+    <label>Position:</label>
+    <select id="position">
+      <option value="long">Long</option>
+      <option value="short">Short</option>
+    </select><br>
+
+    <label>Margin Type:</label>
+    <select id="marginType">
+      <option value="isolated">Isolated</option>
+      <option value="cross">Cross</option>
+    </select><br>
+
+    <button onclick="calculateLiq()">Calculate</button>
+
+    <div id="result" style="margin-top: 10px;"></div>
 
     <!-- Chart container -->
-    <div class="chart-container" id="chartContainer">
+    <div class="chart-container">
       <canvas id="candleChart"></canvas>
     </div>
   </div>
@@ -75,8 +138,9 @@
         document.getElementById("entryPrice").value = parseFloat(price).toFixed(4);
 
         const behavior = await getMarketBehavior();
-        document.getElementById("marketBehavior").textContent = behavior;
-        document.getElementById("marketBehavior").className = behavior.toLowerCase();
+        const behaviorEl = document.getElementById("marketBehavior");
+        behaviorEl.textContent = behavior;
+        behaviorEl.className = behavior.toLowerCase();
       } catch (err) {
         alert("Failed to fetch price. Please check symbol or network.");
       }
@@ -86,8 +150,8 @@
       const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=2`;
       const res = await fetch(url);
       const data = await res.json();
-      const lastClose = parseFloat(data[data.length - 1][4]);
-      const prevClose = parseFloat(data[data.length - 2][4]);
+      const lastClose = parseFloat(data[1][4]);
+      const prevClose = parseFloat(data[0][4]);
       return lastClose > prevClose ? 'Bullish' : 'Bearish';
     }
 
@@ -117,8 +181,7 @@
               data: formattedData,
               upColor: 'green',
               downColor: 'red',
-              borderColor: 'black',
-              color: 'black'
+              borderColor: 'black'
             }]
           },
           options: {
@@ -127,7 +190,7 @@
             scales: {
               x: {
                 type: 'time',
-                time: { unit: 'hour', tooltipFormat: 'MMM dd, HH:mm' },
+                time: { unit: 'hour', tooltipFormat: 'MMM dd, HH:mm' }
               },
               y: {
                 beginAtZero: false
@@ -181,5 +244,7 @@
 
     loadSymbols();
   </script>
+
+  <!-- copyright hesper -->
 </body>
 </html>
