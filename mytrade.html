@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Trade Calculator</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@3.0.0/dist/chartjs-chart-financial.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@3.0.0/dist/chartjs-chart-financial.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -141,85 +141,98 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>My Trade Calculator</h2>
-    <div class="form-grid">
-      <div>
-        <label for="exchange">Select Exchange:</label>
-        <select id="exchange">
-          <option value="binance">Binance</option>
-          <option value="mexc">MEXC</option>
-        </select>
-      </div>
-      <div>
-        <label for="symbolSearch">Search Coin:</label>
-        <div id="symbolListContainer">
-          <input type="text" id="symbolSearch" oninput="filterSymbols()" placeholder="e.g., BTCUSDT">
-          <select id="symbolList" size="10"></select>
-        </div>
-      </div>
-      <div>
-        <label for="marketBehavior">Market Behavior:</label>
-        <div id="marketBehavior" class="bullish">Loading...</div>
-      </div>
-      <div>
-        <label for="marketPrice">Market Price:</label>
-        <input type="text" id="marketPrice" placeholder="Enter or fetch market price">
-      </div>
-      <div>
-        <label for="marginType">Margin Type:</label>
-        <select id="marginType">
-          <option value="cross">Cross</option>
-          <option value="isolated">Isolated</option>
-        </select>
-      </div>
-      <div>
-        <label for="position">Position:</label>
-        <select id="position">
-          <option value="long">Long</option>
-          <option value="short">Short</option>
-        </select>
-      </div>
-      <div>
-        <label for="leverage">Leverage:</label>
-        <input type="number" id="leverage" placeholder="e.g., 20">
-      </div>
-      <div>
-        <label for="entryPrice">Entry Price:</label>
-        <input type="number" id="entryPrice" placeholder="Enter your entry price">
-      </div>
-      <div>
-        <label for="margin">Margin Used ($):</label>
-        <input type="number" id="margin" placeholder="e.g., 20">
-      </div>
-      <div>
-        <label for="wallet">Wallet Balance ($):</label>
-        <input type="number" id="wallet" placeholder="e.g., 50">
-      </div>
-      <div>
-        <label for="tpPrice">Target Take-Profit Price:</label>
-        <input type="number" id="tpPrice" placeholder="e.g., 1800">
+<div class="container">
+  <h2>My Trade Calculator</h2>
+  <div class="form-grid">
+    <div>
+      <label for="exchange">Select Exchange:</label>
+      <select id="exchange">
+        <option value="binance">Binance</option>
+        <option value="mexc">MEXC</option>
+      </select>
+    </div>
+    <div>
+      <label for="symbolSearch">Search Coin:</label>
+      <div id="symbolListContainer">
+        <input type="text" id="symbolSearch" oninput="filterSymbols()" placeholder="e.g., BTCUSDT">
+        <select id="symbolList" size="10"></select>
       </div>
     </div>
-
-    <button onclick="calculateLiq()" style="margin-top: 15px; width: 100%">Calculate</button>
-
-    <div class="result" id="result"></div>
-
-    <footer class="footer">
-      <p>&copy; 2025 Hesper. All rights reserved.</p>
-    </footer>
-
-    <div class="notice">
-      <p><strong>Notice:</strong> The calculations provided may not be 100% accurate due to trading fees and other exchange charges.</p>
+    <div>
+      <label for="marketBehavior">Market Behavior:</label>
+      <div id="marketBehavior" class="bullish">Loading...</div>
     </div>
-
-    <div class="chart-container" id="chartContainer">
-      <canvas id="candleChart"></canvas>
+    <div>
+      <label for="marketPrice">Market Price:</label>
+      <input type="text" id="marketPrice" placeholder="Enter or fetch market price">
+    </div>
+    <div>
+      <label for="marginType">Margin Type:</label>
+      <select id="marginType">
+        <option value="cross">Cross</option>
+        <option value="isolated">Isolated</option>
+      </select>
+    </div>
+    <div>
+      <label for="position">Position:</label>
+      <select id="position">
+        <option value="long">Long</option>
+        <option value="short">Short</option>
+      </select>
+    </div>
+    <div>
+      <label for="leverage">Leverage:</label>
+      <input type="number" id="leverage" placeholder="e.g., 20">
+    </div>
+    <div>
+      <label for="entryPrice">Entry Price:</label>
+      <input type="number" id="entryPrice" placeholder="Enter your entry price">
+    </div>
+    <div>
+      <label for="margin">Margin Used ($):</label>
+      <input type="number" id="margin" placeholder="e.g., 20">
+    </div>
+    <div>
+      <label for="wallet">Wallet Balance ($):</label>
+      <input type="number" id="wallet" placeholder="e.g., 50">
+    </div>
+    <div>
+      <label for="tpPrice">Target Take-Profit Price:</label>
+      <input type="number" id="tpPrice" placeholder="e.g., 1800">
     </div>
   </div>
 
-  <<script>
+  <button onclick="calculateLiq()" style="margin-top: 15px; width: 100%">Calculate</button>
+
+  <div class="result" id="result"></div>
+
+  <footer class="footer">
+    <p>&copy; 2025 Hesper. All rights reserved.</p>
+  </footer>
+
+  <div class="notice">
+    <p><strong>Notice:</strong> The calculations provided may not be 100% accurate due to trading fees and other exchange charges.</p>
+  </div>
+
+  <div class="chart-container" id="chartContainer">
+    <canvas id="candleChart"></canvas>
+  </div>
+</div>
+
+<script>
+  // Register Chart.js Financial Chart components
+  const { Chart } = window;
+  Chart.register(
+    window.CandlestickController,
+    window.CandlestickElement,
+    window.TimeScale,
+    window.LinearScale,
+    window.Tooltip,
+    window.Title
+  );
+</script>
+
+<script>
   let allSymbols = [];
   let selectedSymbol = '';
   let candleChart;
@@ -270,9 +283,8 @@
       document.getElementById("entryPrice").value = parseFloat(price).toFixed(4);
 
       const behavior = await getMarketBehavior();
-      const behaviorEl = document.getElementById("marketBehavior");
-      behaviorEl.textContent = behavior;
-      behaviorEl.className = behavior.toLowerCase() === 'bullish' ? 'bullish' : 'bearish';
+      document.getElementById("marketBehavior").textContent = behavior;
+      document.getElementById("marketBehavior").className = behavior.toLowerCase();
     } catch (err) {
       alert("Failed to fetch price. Please check symbol or network.");
     }
@@ -289,7 +301,6 @@
 
   async function loadCandleChart() {
     if (!selectedSymbol) return;
-
     if (candleChart) candleChart.destroy();
 
     try {
@@ -345,7 +356,6 @@
       });
     } catch (err) {
       console.error("Error loading chart:", err);
-      document.getElementById('chartContainer').innerHTML = `<p style="text-align:center;color:red;">Failed to load chart</p>`;
     }
   }
 
@@ -363,9 +373,10 @@
     const positionSize = margin * leverage;
     const mmr = 0.005;
     const maintenanceMargin = positionSize * mmr;
-    const walletToUse = marginType === "cross" ? wallet : 0;
 
     let liqPrice;
+    const walletToUse = marginType === "cross" ? wallet : 0;
+
     if (position === "long") {
       liqPrice = (positionSize * entryPrice) / (positionSize + walletToUse - maintenanceMargin);
     } else {
@@ -376,9 +387,11 @@
 
     let tpProfit = '';
     if (tpPrice) {
-      tpProfit = position === "long"
-        ? ((tpPrice - entryPrice) * (positionSize / entryPrice)).toFixed(2)
-        : ((entryPrice - tpPrice) * (positionSize / entryPrice)).toFixed(2);
+      if (position === "long") {
+        tpProfit = ((tpPrice - entryPrice) * (positionSize / entryPrice)).toFixed(2);
+      } else {
+        tpProfit = ((entryPrice - tpPrice) * (positionSize / entryPrice)).toFixed(2);
+      }
       tpProfit = tpProfit * (1 - tradingFee);
     }
 
@@ -390,7 +403,6 @@
 
   loadSymbols();
 </script>
-
 
 </body>
 </html>
