@@ -219,180 +219,178 @@
     </div>
   </div>
 
-  <script>
-    let allSymbols = [];
-    let selectedSymbol = '';
-    let candleChart;
+  <<script>
+  let allSymbols = [];
+  let selectedSymbol = '';
+  let candleChart;
+  const tradingFee = 0.001;
 
-    const tradingFee = 0.001;
-
-    async function loadSymbols() {
-      try {
-        const res = await fetch('https://api.binance.com/api/v3/exchangeInfo');
-        const data = await res.json();
-        allSymbols = data.symbols.map(s => s.symbol).filter(s => s.endsWith('USDT'));
-      } catch (e) {
-        alert("Error loading symbols.");
-      }
+  async function loadSymbols() {
+    try {
+      const res = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+      const data = await res.json();
+      allSymbols = data.symbols.map(s => s.symbol).filter(s => s.endsWith('USDT'));
+    } catch (e) {
+      alert("Error loading symbols.");
     }
+  }
 
-    function filterSymbols() {
-      const search = document.getElementById("symbolSearch").value.toUpperCase();
-      const filtered = allSymbols.filter(s => s.includes(search));
-      const list = document.getElementById("symbolList");
-      list.innerHTML = '';
-      list.style.display = filtered.length ? 'block' : 'none';
-      filtered.forEach(symbol => {
-        const opt = document.createElement("option");
-        opt.value = symbol;
-        opt.textContent = symbol;
-        list.appendChild(opt);
-      });
-    }
-
-    document.getElementById("symbolList").addEventListener("change", function () {
-      selectedSymbol = this.value;
-      document.getElementById("symbolSearch").value = selectedSymbol;
-      document.getElementById("symbolList").style.display = 'none';
-      fetchPrice();
-      loadCandleChart();
+  function filterSymbols() {
+    const search = document.getElementById("symbolSearch").value.toUpperCase();
+    const filtered = allSymbols.filter(s => s.includes(search));
+    const list = document.getElementById("symbolList");
+    list.innerHTML = '';
+    list.style.display = filtered.length ? 'block' : 'none';
+    filtered.forEach(symbol => {
+      const opt = document.createElement("option");
+      opt.value = symbol;
+      opt.textContent = symbol;
+      list.appendChild(opt);
     });
+  }
 
-    async function fetchPrice() {
-      selectedSymbol = document.getElementById("symbolSearch").value.toUpperCase();
-      if (!selectedSymbol) return alert("Please enter or select a symbol");
+  document.getElementById("symbolList").addEventListener("change", function () {
+    selectedSymbol = this.value;
+    document.getElementById("symbolSearch").value = selectedSymbol;
+    document.getElementById("symbolList").style.display = 'none';
+    fetchPrice();
+    loadCandleChart();
+  });
 
-      try {
-        const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${selectedSymbol}`);
-        const data = await res.json();
-        const price = data.price;
-        if (!price) throw new Error("Price not found");
-        document.getElementById("marketPrice").value = parseFloat(price).toFixed(4);
-        document.getElementById("entryPrice").value = parseFloat(price).toFixed(4);
+  async function fetchPrice() {
+    selectedSymbol = document.getElementById("symbolSearch").value.toUpperCase();
+    if (!selectedSymbol) return alert("Please enter or select a symbol");
 
-        const behavior = await getMarketBehavior();
-        document.getElementById("marketBehavior").textContent = behavior;
-        document.getElementById("marketBehavior").className = behavior.toLowerCase();
-      } catch (err) {
-        alert("Failed to fetch price. Please check symbol or network.");
-      }
+    try {
+      const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${selectedSymbol}`);
+      const data = await res.json();
+      const price = data.price;
+      if (!price) throw new Error("Price not found");
+      document.getElementById("marketPrice").value = parseFloat(price).toFixed(4);
+      document.getElementById("entryPrice").value = parseFloat(price).toFixed(4);
+
+      const behavior = await getMarketBehavior();
+      const behaviorEl = document.getElementById("marketBehavior");
+      behaviorEl.textContent = behavior;
+      behaviorEl.className = behavior.toLowerCase() === 'bullish' ? 'bullish' : 'bearish';
+    } catch (err) {
+      alert("Failed to fetch price. Please check symbol or network.");
     }
+  }
 
-    async function getMarketBehavior() {
-      const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=2`;
+  async function getMarketBehavior() {
+    const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=2`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const lastClose = parseFloat(data[data.length - 1][4]);
+    const prevClose = parseFloat(data[data.length - 2][4]);
+    return lastClose > prevClose ? 'Bullish' : 'Bearish';
+  }
+
+  async function loadCandleChart() {
+    if (!selectedSymbol) return;
+
+    if (candleChart) candleChart.destroy();
+
+    try {
+      const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=50`;
       const res = await fetch(url);
       const data = await res.json();
-      const lastClose = parseFloat(data[data.length - 1][4]);
-      const prevClose = parseFloat(data[data.length - 2][4]);
 
-      return lastClose > prevClose ? 'Bullish' : 'Bearish';
-    }
+      const formattedData = data.map(d => ({
+        x: new Date(d[0]),
+        o: parseFloat(d[1]),
+        h: parseFloat(d[2]),
+        l: parseFloat(d[3]),
+        c: parseFloat(d[4]),
+      }));
 
-    async function loadCandleChart() {
-      if (!selectedSymbol) return;
-
-      if (candleChart) candleChart.destroy();
-
-      try {
-        const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=50`;
-        const res = await fetch(url);
-        const data = await res.json();
-
-        const formattedData = data.map(d => ({
-          x: new Date(d[0]),
-          o: parseFloat(d[1]),
-          h: parseFloat(d[2]),
-          l: parseFloat(d[3]),
-          c: parseFloat(d[4]),
-        }));
-
-        const ctx = document.getElementById('candleChart').getContext('2d');
-        candleChart = new Chart(ctx, {
-          type: 'candlestick',
-          data: {
-            datasets: [{
-              label: `${selectedSymbol} Price`,
-              data: formattedData,
-              borderColor: '#7c3aed',
-              upColor: 'green',
-              downColor: 'red',
-              color: 'black',
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              x: {
-                type: 'time',
-                time: {
-                  tooltipFormat: 'MMM dd, HH:mm',
-                  unit: 'hour'
-                },
-                ticks: {
-                  autoSkip: true,
-                  maxTicksLimit: 10
-                }
+      const ctx = document.getElementById('candleChart').getContext('2d');
+      candleChart = new Chart(ctx, {
+        type: 'candlestick',
+        data: {
+          datasets: [{
+            label: `${selectedSymbol} Price`,
+            data: formattedData,
+            borderColor: '#7c3aed',
+            upColor: 'green',
+            downColor: 'red',
+            color: 'black',
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                tooltipFormat: 'MMM dd, HH:mm',
+                unit: 'hour'
               },
-              y: {
-                beginAtZero: false
+              ticks: {
+                autoSkip: true,
+                maxTicksLimit: 10
               }
             },
-            plugins: {
-              legend: {
-                display: false
-              }
+            y: {
+              beginAtZero: false
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
             }
           }
-        });
-      } catch (err) {
-        console.error("Error loading chart:", err);
-      }
-    }
-
-    function calculateLiq() {
-      const entryPrice = parseFloat(document.getElementById("entryPrice").value);
-      const margin = parseFloat(document.getElementById("margin").value);
-      const wallet = parseFloat(document.getElementById("wallet").value);
-      const leverage = parseFloat(document.getElementById("leverage").value);
-      const position = document.getElementById("position").value;
-      const marginType = document.getElementById("marginType").value;
-      const tpPrice = parseFloat(document.getElementById("tpPrice").value);
-
-      if (!entryPrice || !margin || !wallet || !leverage) return alert("Please fill all fields correctly");
-
-      const positionSize = margin * leverage;
-      const mmr = 0.005;
-      const maintenanceMargin = positionSize * mmr;
-
-      let liqPrice;
-      const walletToUse = marginType === "cross" ? wallet : 0;
-
-      if (position === "long") {
-        liqPrice = (positionSize * entryPrice) / (positionSize + walletToUse - maintenanceMargin);
-      } else {
-        liqPrice = (positionSize * entryPrice) / (positionSize - walletToUse + maintenanceMargin);
-      }
-
-      liqPrice = liqPrice * (1 - tradingFee);
-
-      let tpProfit = '';
-      if (tpPrice) {
-        if (position === "long") {
-          tpProfit = ((tpPrice - entryPrice) * (positionSize / entryPrice)).toFixed(2);
-        } else {
-          tpProfit = ((entryPrice - tpPrice) * (positionSize / entryPrice)).toFixed(2);
         }
-        tpProfit = tpProfit * (1 - tradingFee);
-      }
+      });
+    } catch (err) {
+      console.error("Error loading chart:", err);
+      document.getElementById('chartContainer').innerHTML = `<p style="text-align:center;color:red;">Failed to load chart</p>`;
+    }
+  }
 
-      document.getElementById("result").innerHTML = `
-        <strong style="color: red;">Estimated Liquidation Price:</strong> <span style="color: red;">$${liqPrice.toFixed(2)}</span><br>
-        ${tpPrice ? `<strong style="color: green;">Estimated Profit:</strong> <span style="color: green;">$${tpProfit}</span>` : ''}
-      `;
+  function calculateLiq() {
+    const entryPrice = parseFloat(document.getElementById("entryPrice").value);
+    const margin = parseFloat(document.getElementById("margin").value);
+    const wallet = parseFloat(document.getElementById("wallet").value);
+    const leverage = parseFloat(document.getElementById("leverage").value);
+    const position = document.getElementById("position").value;
+    const marginType = document.getElementById("marginType").value;
+    const tpPrice = parseFloat(document.getElementById("tpPrice").value);
+
+    if (!entryPrice || !margin || !wallet || !leverage) return alert("Please fill all fields correctly");
+
+    const positionSize = margin * leverage;
+    const mmr = 0.005;
+    const maintenanceMargin = positionSize * mmr;
+    const walletToUse = marginType === "cross" ? wallet : 0;
+
+    let liqPrice;
+    if (position === "long") {
+      liqPrice = (positionSize * entryPrice) / (positionSize + walletToUse - maintenanceMargin);
+    } else {
+      liqPrice = (positionSize * entryPrice) / (positionSize - walletToUse + maintenanceMargin);
     }
 
-    loadSymbols();
-  </script>
+    liqPrice = liqPrice * (1 - tradingFee);
+
+    let tpProfit = '';
+    if (tpPrice) {
+      tpProfit = position === "long"
+        ? ((tpPrice - entryPrice) * (positionSize / entryPrice)).toFixed(2)
+        : ((entryPrice - tpPrice) * (positionSize / entryPrice)).toFixed(2);
+      tpProfit = tpProfit * (1 - tradingFee);
+    }
+
+    document.getElementById("result").innerHTML = `
+      <strong style="color: red;">Estimated Liquidation Price:</strong> <span style="color: red;">$${liqPrice.toFixed(2)}</span><br>
+      ${tpPrice ? `<strong style="color: green;">Estimated Profit:</strong> <span style="color: green;">$${tpProfit}</span>` : ''}
+    `;
+  }
+
+  loadSymbols();
+</script>
+
 
 </body>
 </html>
