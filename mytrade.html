@@ -217,12 +217,10 @@
     </div>
   </div>
 
-  <!-- Chart.js & plugin setup -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@3.0.0/dist/chartjs-chart-financial.min.js"></script>
 
-  <!-- Register required components for Chart.js -->
   <script>
     const { Chart } = window;
     const {
@@ -251,7 +249,6 @@
     );
   </script>
 
-  <!-- Main logic -->
   <script>
     let allSymbols = [];
     let selectedSymbol = '';
@@ -285,32 +282,41 @@
       selectedSymbol = this.value;
       document.getElementById("symbolSearch").value = selectedSymbol;
       document.getElementById("symbolList").style.display = 'none';
-      fetchPrice();
-      loadCandleChart();
+      fetchPriceAndChart(); // Call combined function
     });
 
-    async function fetchPrice() {
-      selectedSymbol = document.getElementById("symbolSearch").value.toUpperCase();
+    async function fetchPriceAndChart() {
       if (!selectedSymbol) return alert("Please enter or select a symbol");
 
       try {
-        const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${selectedSymbol}`);
-        const data = await res.json();
-        const price = data.price;
-        document.getElementById("marketPrice").value = parseFloat(price).toFixed(4);
-        document.getElementById("entryPrice").value = parseFloat(price).toFixed(4);
+        const priceData = await fetchPrice(selectedSymbol);
+        const behavior = await getMarketBehavior(selectedSymbol);
 
-        const behavior = await getMarketBehavior();
+        document.getElementById("marketPrice").value = parseFloat(priceData).toFixed(4);
+        document.getElementById("entryPrice").value = parseFloat(priceData).toFixed(4);
         document.getElementById("marketBehavior").textContent = behavior;
         document.getElementById("marketBehavior").className = behavior.toLowerCase();
+
+        await loadCandleChart(selectedSymbol); // Pass selectedSymbol to loadCandleChart
       } catch (err) {
-        alert("Failed to fetch price. Please check the symbol.");
+        console.error("Error fetching data:", err);
+        alert("Failed to fetch price or chart data. Please check the symbol and try again.");
+        if (candleChart) {
+          candleChart.destroy();
+        }
+        document.getElementById("chartContainer").style.display = 'none';
       }
     }
 
-    async function getMarketBehavior() {
+    async function fetchPrice(symbol) {
+      const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+      const data = await res.json();
+      return data.price;
+    }
+
+    async function getMarketBehavior(symbol) {
       try {
-        const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=2`;
+        const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1h&limit=2`;
         const res = await fetch(url);
         const data = await res.json();
         const lastClose = parseFloat(data[data.length - 1][4]);
@@ -322,96 +328,127 @@
       }
     }
 
-    async function loadCandleChart() {
-      if (!selectedSymbol) return;
-      
+   async function loadCandleChart(symbol) {
       try {
-        document.getElementById("chartContainer").style.display = 'block';
-        
-        const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=50`;
-        const res = await fetch(url);
-        
-        if (!res.ok) {
-          throw new Error(`API request failed with status ${res.status}`);
-        }
-        
-        const data = await res.json();
-        
-        const chartData = data.map(d => ({
-          t: new Date(d[0]),
-          o: parseFloat(d[1]),
-          h: parseFloat(d[2]),
-          l: parseFloat(d[3]),
-          c: parseFloat(d[4])
-        }));
+          document.getElementById("chartContainer").style.display = 'block';
+          let binanceUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1h&limit=50`;
+          let res = await fetch(binanceUrl);
 
-        const ctx = document.getElementById('candleChart').getContext('2d');
-        
-        // Destroy previous chart if it exists
-        if (candleChart) {
-          candleChart.destroy();
-        }
+          if (res.ok) {
+              const data = await res.json();
+              const chartData = data.map(d => ({
+                  t: new Date(d[0]),
+                  o: parseFloat(d[1]),
+                  h: parseFloat(d[2]),
+                  l: parseFloat(d[3]),
+                  c: parseFloat(d[4])
+              }));
+              renderChart(symbol, chartData);
+              return; // Exit the function if Binance data is successful
+          }
 
-        candleChart = new Chart(ctx, {
-          type: 'candlestick',
-          data: {
-            datasets: [{
-              label: selectedSymbol,
-              data: chartData,
-              color: {
-                up: '#4CAF50',
-                down: '#F44336',
-                unchanged: '#9E9E9E',
-              }
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              title: {
-                display: true,
-                text: `${selectedSymbol} - 1 Hour Candlestick`,
-                font: {
-                  size: 16
-                }
-              },
-              legend: {
-                display: false
-              },
-              tooltip: {
-                mode: 'index',
-                intersect: false
+          // Fallback to Etherscan (Adjust the URL and data parsing as needed)
+          console.warn(`Failed to fetch from Binance, trying Etherscan for symbol: ${symbol}`);
+          const etherscanUrl = `https://api.etherscan.io/api?module=chart&action=candlestick&symbol=t${symbol}&interval=60&address=0x47e3aa5ba01e6a1a69823401e9829a91812199f6&start=1672531200&end=1672534800`; // Example
+          res = await fetch(etherscanUrl);
+
+          if (!res.ok) {
+              throw new Error(`Failed to fetch chart data from both Binance and Etherscan for symbol: ${symbol}`);
+          }
+
+          const etherscanData = await res.json();
+          console.log("Etherscan Data:", etherscanData); // Debug: Inspect the Etherscan response
+
+          // Adapt the data to the format expected by the charting library.  This is crucial.
+          let chartData;
+          if (etherscanData && etherscanData.result) {
+            chartData = etherscanData.result.map(item => ({
+                t: new Date(parseInt(item.timestamp) * 1000),
+                o: parseFloat(item.open),
+                h: parseFloat(item.high),
+                l: parseFloat(item.low),
+                c: parseFloat(item.close)
+            }));
+          }
+          else {
+             throw new Error(`Etherscan response is not in the expected format for symbol: ${symbol}`);
+          }
+          renderChart(symbol, chartData);
+
+      } catch (error) {
+          console.error("Error loading candle chart:", error);
+          alert("Failed to load chart data. Please try again.");
+          document.getElementById("chartContainer").style.display = 'none';
+      }
+  }
+
+    function renderChart(symbol, chartData) {
+      const ctx = document.getElementById('candleChart').getContext('2d');
+      if (candleChart) {
+        candleChart.destroy();
+      }
+
+      candleChart = new Chart(ctx, {
+        type: 'candlestick',
+        data: {
+          datasets: [{
+            label: symbol,
+            data: chartData,
+            color: {
+              up: '#4CAF50',
+              down: '#F44336',
+              unchanged: '#9E9E9E',
+            }
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: `${symbol} - 1 Hour Candlestick`,
+              font: {
+                size: 16
               }
             },
-            scales: {
-              x: {
-                type: 'time',
-                time: {
-                  unit: 'hour',
-                  displayFormats: {
-                    hour: 'MMM d, HH:mm'
-                  }
-                },
-                grid: {
-                  display: false
+            legend: {
+              display: false
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false
+            }
+          },
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'hour',
+                displayFormats: {
+                  hour: 'MMM d, HH:mm'
                 }
               },
-              y: {
-                ticks: {
-                  callback: function(value) {
-                    return parseFloat(value).toFixed(4);
-                  }
+              grid: {
+                display: false
+              }
+            },
+            y: {
+              ticks: {
+                callback: function(value) {
+                  return parseFloat(value).toFixed(4);
                 }
               }
             }
           }
-        });
-      } catch (error) {
-        console.error("Error loading candle chart:", error);
-        alert("Failed to load chart data. Please try again.");
-        document.getElementById("chartContainer").style.display = 'none';
-      }
+        }
+      });
+    }
+
+
+    function calculateLiq() {
+      // Your existing calculation logic here
+      document.getElementById('result').innerHTML = 'Calculation results would appear here';
     }
 
     // Initialize the page
