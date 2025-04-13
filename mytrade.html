@@ -258,6 +258,9 @@
     let candleChart;
     const tradingFee = 0.001;
 
+    // Initialize chart container as hidden
+    document.getElementById("chartContainer").style.display = 'none';
+
     async function loadSymbols() {
       const res = await fetch('https://api.binance.com/api/v3/exchangeInfo');
       const data = await res.json();
@@ -278,7 +281,7 @@
       });
     }
 
-    document.getElementById("symbolList").addEventListener("change", function () {
+    document.getElementById("symbolList").addEventListener("change", function() {
       selectedSymbol = this.value;
       document.getElementById("symbolSearch").value = selectedSymbol;
       document.getElementById("symbolList").style.display = 'none';
@@ -301,72 +304,120 @@
         document.getElementById("marketBehavior").textContent = behavior;
         document.getElementById("marketBehavior").className = behavior.toLowerCase();
       } catch (err) {
-        alert("Failed to fetch price.");
+        alert("Failed to fetch price. Please check the symbol.");
       }
     }
 
     async function getMarketBehavior() {
-      const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=2`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const lastClose = parseFloat(data[data.length - 1][4]);
-      const prevClose = parseFloat(data[data.length - 2][4]);
-      return lastClose > prevClose ? 'Bullish' : 'Bearish';
+      try {
+        const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=2`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const lastClose = parseFloat(data[data.length - 1][4]);
+        const prevClose = parseFloat(data[data.length - 2][4]);
+        return lastClose > prevClose ? 'Bullish' : 'Bearish';
+      } catch (err) {
+        console.error("Error getting market behavior:", err);
+        return "Unknown";
+      }
     }
 
     async function loadCandleChart() {
       if (!selectedSymbol) return;
       
-      document.getElementById("chartContainer").style.display = 'block';
-      
-      const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=50`;
-      const res = await fetch(url);
-      const data = await res.json();
-      
-      const chartData = data.map(d => ({
-        t: new Date(d[0]),
-        o: parseFloat(d[1]),
-        h: parseFloat(d[2]),
-        l: parseFloat(d[3]),
-        c: parseFloat(d[4])
-      }));
+      try {
+        document.getElementById("chartContainer").style.display = 'block';
+        
+        const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=50`;
+        const res = await fetch(url);
+        
+        if (!res.ok) {
+          throw new Error(`API request failed with status ${res.status}`);
+        }
+        
+        const data = await res.json();
+        
+        const chartData = data.map(d => ({
+          t: new Date(d[0]),
+          o: parseFloat(d[1]),
+          h: parseFloat(d[2]),
+          l: parseFloat(d[3]),
+          c: parseFloat(d[4])
+        }));
 
-      const ctx = document.getElementById('candleChart').getContext('2d');
-      if (candleChart) candleChart.destroy();
-      candleChart = new Chart(ctx, {
-        type: 'candlestick',
-        data: {
-          datasets: [{
-            label: selectedSymbol,
-            data: chartData
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            title: {
-              display: true,
-              text: selectedSymbol + ' - 1 Hour Candlestick'
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false
-            }
+        const ctx = document.getElementById('candleChart').getContext('2d');
+        
+        // Destroy previous chart if it exists
+        if (candleChart) {
+          candleChart.destroy();
+        }
+
+        candleChart = new Chart(ctx, {
+          type: 'candlestick',
+          data: {
+            datasets: [{
+              label: selectedSymbol,
+              data: chartData,
+              color: {
+                up: '#4CAF50',
+                down: '#F44336',
+                unchanged: '#9E9E9E',
+              }
+            }]
           },
-          scales: {
-            x: {
-              type: 'time',
-              time: {
-                unit: 'hour'
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: `${selectedSymbol} - 1 Hour Candlestick`,
+                font: {
+                  size: 16
+                }
+              },
+              legend: {
+                display: false
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false
+              }
+            },
+            scales: {
+              x: {
+                type: 'time',
+                time: {
+                  unit: 'hour',
+                  displayFormats: {
+                    hour: 'MMM d, HH:mm'
+                  }
+                },
+                grid: {
+                  display: false
+                }
+              },
+              y: {
+                ticks: {
+                  callback: function(value) {
+                    return parseFloat(value).toFixed(4);
+                  }
+                }
               }
             }
           }
-        }
-      });
+        });
+      } catch (error) {
+        console.error("Error loading candle chart:", error);
+        alert("Failed to load chart data. Please try again.");
+        document.getElementById("chartContainer").style.display = 'none';
+      }
     }
 
-    loadSymbols();
+    // Initialize the page
+    window.addEventListener('DOMContentLoaded', (event) => {
+      loadSymbols();
+    });
   </script>
 </body>
 </html>
