@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>My Trade Calculator</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@3.0.0/dist/chartjs-chart-financial.min.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -128,7 +126,6 @@
       color: red;
       background-color: #ffebee;
     }
-
     @media (max-width: 768px) {
       .form-grid {
         grid-template-columns: 1fr;
@@ -141,169 +138,184 @@
   </style>
 </head>
 <body>
-<div class="container">
-  <h2>My Trade Calculator</h2>
-  <div class="form-grid">
-    <div>
-      <label for="exchange">Select Exchange:</label>
-      <select id="exchange">
-        <option value="binance">Binance</option>
-        <option value="mexc">MEXC</option>
-      </select>
-    </div>
-    <div>
-      <label for="symbolSearch">Search Coin:</label>
-      <div id="symbolListContainer">
-        <input type="text" id="symbolSearch" oninput="filterSymbols()" placeholder="e.g., BTCUSDT">
-        <select id="symbolList" size="10"></select>
+  <div class="container">
+    <h2>My Trade Calculator</h2>
+    <div class="form-grid">
+      <div>
+        <label for="exchange">Select Exchange:</label>
+        <select id="exchange">
+          <option value="binance">Binance</option>
+          <option value="mexc">MEXC</option>
+        </select>
+      </div>
+      <div>
+        <label for="symbolSearch">Search Coin:</label>
+        <div id="symbolListContainer">
+          <input type="text" id="symbolSearch" oninput="filterSymbols()" placeholder="e.g., BTCUSDT">
+          <select id="symbolList" size="10"></select>
+        </div>
+      </div>
+      <div>
+        <label for="marketBehavior">Market Behavior:</label>
+        <div id="marketBehavior" class="bullish">Loading...</div>
+      </div>
+      <div>
+        <label for="marketPrice">Market Price:</label>
+        <input type="text" id="marketPrice" placeholder="Enter or fetch market price">
+      </div>
+      <div>
+        <label for="marginType">Margin Type:</label>
+        <select id="marginType">
+          <option value="cross">Cross</option>
+          <option value="isolated">Isolated</option>
+        </select>
+      </div>
+      <div>
+        <label for="position">Position:</label>
+        <select id="position">
+          <option value="long">Long</option>
+          <option value="short">Short</option>
+        </select>
+      </div>
+      <div>
+        <label for="leverage">Leverage:</label>
+        <input type="number" id="leverage" placeholder="e.g., 20">
+      </div>
+      <div>
+        <label for="entryPrice">Entry Price:</label>
+        <input type="number" id="entryPrice" placeholder="Enter your entry price">
+      </div>
+      <div>
+        <label for="margin">Margin Used ($):</label>
+        <input type="number" id="margin" placeholder="e.g., 20">
+      </div>
+      <div>
+        <label for="wallet">Wallet Balance ($):</label>
+        <input type="number" id="wallet" placeholder="e.g., 50">
+      </div>
+      <div>
+        <label for="tpPrice">Target Take-Profit Price:</label>
+        <input type="number" id="tpPrice" placeholder="e.g., 1800">
       </div>
     </div>
-    <div>
-      <label for="marketBehavior">Market Behavior:</label>
-      <div id="marketBehavior" class="bullish">Loading...</div>
+
+    <button onclick="calculateLiq()" style="margin-top: 15px; width: 100%">Calculate</button>
+
+    <div class="result" id="result"></div>
+
+    <footer class="footer">
+      <p>&copy; 2025 Hesper. All rights reserved.</p>
+    </footer>
+
+    <div class="notice">
+      <p><strong>Notice:</strong> The calculations provided may not be 100% accurate due to trading fees and other exchange charges.</p>
     </div>
-    <div>
-      <label for="marketPrice">Market Price:</label>
-      <input type="text" id="marketPrice" placeholder="Enter or fetch market price">
-    </div>
-    <div>
-      <label for="marginType">Margin Type:</label>
-      <select id="marginType">
-        <option value="cross">Cross</option>
-        <option value="isolated">Isolated</option>
-      </select>
-    </div>
-    <div>
-      <label for="position">Position:</label>
-      <select id="position">
-        <option value="long">Long</option>
-        <option value="short">Short</option>
-      </select>
-    </div>
-    <div>
-      <label for="leverage">Leverage:</label>
-      <input type="number" id="leverage" placeholder="e.g., 20">
-    </div>
-    <div>
-      <label for="entryPrice">Entry Price:</label>
-      <input type="number" id="entryPrice" placeholder="Enter your entry price">
-    </div>
-    <div>
-      <label for="margin">Margin Used ($):</label>
-      <input type="number" id="margin" placeholder="e.g., 20">
-    </div>
-    <div>
-      <label for="wallet">Wallet Balance ($):</label>
-      <input type="number" id="wallet" placeholder="e.g., 50">
-    </div>
-    <div>
-      <label for="tpPrice">Target Take-Profit Price:</label>
-      <input type="number" id="tpPrice" placeholder="e.g., 1800">
+
+    <div class="chart-container" id="chartContainer">
+      <canvas id="candleChart"></canvas>
     </div>
   </div>
 
-  <button onclick="calculateLiq()" style="margin-top: 15px; width: 100%">Calculate</button>
+  <!-- Chart.js & plugin setup -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@3.0.0/dist/chartjs-chart-financial.min.js"></script>
 
-  <div class="result" id="result"></div>
+  <!-- Register required components for Chart.js -->
+  <script>
+    const { Chart } = window;
+    const {
+      CandlestickController,
+      CandlestickElement,
+      TimeScale,
+      LinearScale,
+      Tooltip,
+      Title,
+      Filler,
+      Legend,
+      CategoryScale
+    } = Chart;
 
-  <footer class="footer">
-    <p>&copy; 2025 Hesper. All rights reserved.</p>
-  </footer>
+    Chart.register(
+      CandlestickController,
+      CandlestickElement,
+      TimeScale,
+      LinearScale,
+      Tooltip,
+      Title,
+      Filler,
+      Legend,
+      CategoryScale
+    );
+  </script>
 
-  <div class="notice">
-    <p><strong>Notice:</strong> The calculations provided may not be 100% accurate due to trading fees and other exchange charges.</p>
-  </div>
+  <!-- Main logic -->
+  <script>
+    let allSymbols = [];
+    let selectedSymbol = '';
+    let candleChart;
+    const tradingFee = 0.001;
 
-  <div class="chart-container" id="chartContainer">
-    <canvas id="candleChart"></canvas>
-  </div>
-</div>
-
-<script>
-  // Register Chart.js Financial Chart components
-  const { Chart } = window;
-  Chart.register(
-    window.CandlestickController,
-    window.CandlestickElement,
-    window.TimeScale,
-    window.LinearScale,
-    window.Tooltip,
-    window.Title
-  );
-</script>
-
-<script>
-  let allSymbols = [];
-  let selectedSymbol = '';
-  let candleChart;
-  const tradingFee = 0.001;
-
-  async function loadSymbols() {
-    try {
+    async function loadSymbols() {
       const res = await fetch('https://api.binance.com/api/v3/exchangeInfo');
       const data = await res.json();
       allSymbols = data.symbols.map(s => s.symbol).filter(s => s.endsWith('USDT'));
-    } catch (e) {
-      alert("Error loading symbols.");
     }
-  }
 
-  function filterSymbols() {
-    const search = document.getElementById("symbolSearch").value.toUpperCase();
-    const filtered = allSymbols.filter(s => s.includes(search));
-    const list = document.getElementById("symbolList");
-    list.innerHTML = '';
-    list.style.display = filtered.length ? 'block' : 'none';
-    filtered.forEach(symbol => {
-      const opt = document.createElement("option");
-      opt.value = symbol;
-      opt.textContent = symbol;
-      list.appendChild(opt);
+    function filterSymbols() {
+      const search = document.getElementById("symbolSearch").value.toUpperCase();
+      const filtered = allSymbols.filter(s => s.includes(search));
+      const list = document.getElementById("symbolList");
+      list.innerHTML = '';
+      list.style.display = filtered.length ? 'block' : 'none';
+      filtered.forEach(symbol => {
+        const opt = document.createElement("option");
+        opt.value = symbol;
+        opt.textContent = symbol;
+        list.appendChild(opt);
+      });
+    }
+
+    document.getElementById("symbolList").addEventListener("change", function () {
+      selectedSymbol = this.value;
+      document.getElementById("symbolSearch").value = selectedSymbol;
+      document.getElementById("symbolList").style.display = 'none';
+      fetchPrice();
+      loadCandleChart();
     });
-  }
 
-  document.getElementById("symbolList").addEventListener("change", function () {
-    selectedSymbol = this.value;
-    document.getElementById("symbolSearch").value = selectedSymbol;
-    document.getElementById("symbolList").style.display = 'none';
-    fetchPrice();
-    loadCandleChart();
-  });
+    async function fetchPrice() {
+      selectedSymbol = document.getElementById("symbolSearch").value.toUpperCase();
+      if (!selectedSymbol) return alert("Please enter or select a symbol");
 
-  async function fetchPrice() {
-    selectedSymbol = document.getElementById("symbolSearch").value.toUpperCase();
-    if (!selectedSymbol) return alert("Please enter or select a symbol");
+      try {
+        const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${selectedSymbol}`);
+        const data = await res.json();
+        const price = data.price;
+        document.getElementById("marketPrice").value = parseFloat(price).toFixed(4);
+        document.getElementById("entryPrice").value = parseFloat(price).toFixed(4);
 
-    try {
-      const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${selectedSymbol}`);
-      const data = await res.json();
-      const price = data.price;
-      if (!price) throw new Error("Price not found");
-      document.getElementById("marketPrice").value = parseFloat(price).toFixed(4);
-      document.getElementById("entryPrice").value = parseFloat(price).toFixed(4);
-
-      const behavior = await getMarketBehavior();
-      document.getElementById("marketBehavior").textContent = behavior;
-      document.getElementById("marketBehavior").className = behavior.toLowerCase();
-    } catch (err) {
-      alert("Failed to fetch price. Please check symbol or network.");
+        const behavior = await getMarketBehavior();
+        document.getElementById("marketBehavior").textContent = behavior;
+        document.getElementById("marketBehavior").className = behavior.toLowerCase();
+      } catch (err) {
+        alert("Failed to fetch price.");
+      }
     }
-  }
 
-  async function getMarketBehavior() {
-    const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=2`;
-    const res = await fetch(url);
-    const data = await res.json();
-    const lastClose = parseFloat(data[data.length - 1][4]);
-    const prevClose = parseFloat(data[data.length - 2][4]);
-    return lastClose > prevClose ? 'Bullish' : 'Bearish';
-  }
+    async function getMarketBehavior() {
+      const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=2`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const lastClose = parseFloat(data[data.length - 1][4]);
+      const prevClose = parseFloat(data[data.length - 2][4]);
+      return lastClose > prevClose ? 'Bullish' : 'Bearish';
+    }
 
-  async function loadCandleChart() {
-    if (!selectedSymbol) return;
-    if (candleChart) candleChart.destroy();
+    async function loadCandleChart() {
+      if (!selectedSymbol) return;
+      if (candleChart) candleChart.destroy();
 
-    try {
       const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=50`;
       const res = await fetch(url);
       const data = await res.json();
@@ -322,11 +334,7 @@
         data: {
           datasets: [{
             label: `${selectedSymbol} Price`,
-            data: formattedData,
-            borderColor: '#7c3aed',
-            upColor: 'green',
-            downColor: 'red',
-            color: 'black',
+            data: formattedData
           }]
         },
         options: {
@@ -337,10 +345,6 @@
               time: {
                 tooltipFormat: 'MMM dd, HH:mm',
                 unit: 'hour'
-              },
-              ticks: {
-                autoSkip: true,
-                maxTicksLimit: 10
               }
             },
             y: {
@@ -354,55 +358,51 @@
           }
         }
       });
-    } catch (err) {
-      console.error("Error loading chart:", err);
-    }
-  }
-
-  function calculateLiq() {
-    const entryPrice = parseFloat(document.getElementById("entryPrice").value);
-    const margin = parseFloat(document.getElementById("margin").value);
-    const wallet = parseFloat(document.getElementById("wallet").value);
-    const leverage = parseFloat(document.getElementById("leverage").value);
-    const position = document.getElementById("position").value;
-    const marginType = document.getElementById("marginType").value;
-    const tpPrice = parseFloat(document.getElementById("tpPrice").value);
-
-    if (!entryPrice || !margin || !wallet || !leverage) return alert("Please fill all fields correctly");
-
-    const positionSize = margin * leverage;
-    const mmr = 0.005;
-    const maintenanceMargin = positionSize * mmr;
-
-    let liqPrice;
-    const walletToUse = marginType === "cross" ? wallet : 0;
-
-    if (position === "long") {
-      liqPrice = (positionSize * entryPrice) / (positionSize + walletToUse - maintenanceMargin);
-    } else {
-      liqPrice = (positionSize * entryPrice) / (positionSize - walletToUse + maintenanceMargin);
     }
 
-    liqPrice = liqPrice * (1 - tradingFee);
+    function calculateLiq() {
+      const entryPrice = parseFloat(document.getElementById("entryPrice").value);
+      const margin = parseFloat(document.getElementById("margin").value);
+      const wallet = parseFloat(document.getElementById("wallet").value);
+      const leverage = parseFloat(document.getElementById("leverage").value);
+      const position = document.getElementById("position").value;
+      const marginType = document.getElementById("marginType").value;
+      const tpPrice = parseFloat(document.getElementById("tpPrice").value);
 
-    let tpProfit = '';
-    if (tpPrice) {
+      if (!entryPrice || !margin || !wallet || !leverage) return alert("Please fill all fields correctly");
+
+      const positionSize = margin * leverage;
+      const mmr = 0.005;
+      const maintenanceMargin = positionSize * mmr;
+
+      let liqPrice;
+      const walletToUse = marginType === "cross" ? wallet : 0;
+
       if (position === "long") {
-        tpProfit = ((tpPrice - entryPrice) * (positionSize / entryPrice)).toFixed(2);
+        liqPrice = (positionSize * entryPrice) / (positionSize + walletToUse - maintenanceMargin);
       } else {
-        tpProfit = ((entryPrice - tpPrice) * (positionSize / entryPrice)).toFixed(2);
+        liqPrice = (positionSize * entryPrice) / (positionSize - walletToUse + maintenanceMargin);
       }
-      tpProfit = tpProfit * (1 - tradingFee);
+
+      liqPrice = liqPrice * (1 - tradingFee);
+
+      let tpProfit = '';
+      if (tpPrice) {
+        if (position === "long") {
+          tpProfit = ((tpPrice - entryPrice) * (positionSize / entryPrice)).toFixed(2);
+        } else {
+          tpProfit = ((entryPrice - tpPrice) * (positionSize / entryPrice)).toFixed(2);
+        }
+        tpProfit = tpProfit * (1 - tradingFee);
+      }
+
+      document.getElementById("result").innerHTML = `
+        <strong style="color: red;">Estimated Liquidation Price:</strong> <span style="color: red;">$${liqPrice.toFixed(2)}</span><br>
+        ${tpPrice ? `<strong style="color: green;">Estimated Profit:</strong> <span style="color: green;">$${tpProfit}</span>` : ''}
+      `;
     }
 
-    document.getElementById("result").innerHTML = `
-      <strong style="color: red;">Estimated Liquidation Price:</strong> <span style="color: red;">$${liqPrice.toFixed(2)}</span><br>
-      ${tpPrice ? `<strong style="color: green;">Estimated Profit:</strong> <span style="color: green;">$${tpProfit}</span>` : ''}
-    `;
-  }
-
-  loadSymbols();
-</script>
-
+    loadSymbols();
+  </script>
 </body>
 </html>
