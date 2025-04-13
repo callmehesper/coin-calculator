@@ -236,6 +236,7 @@
       CategoryScale
     } = Chart;
 
+    // Register necessary components for chartjs and the financial chart plugin
     Chart.register(
       CandlestickController,
       CandlestickElement,
@@ -313,93 +314,42 @@
     }
 
     async function loadCandleChart() {
-      if (!selectedSymbol) return;
-      if (candleChart) candleChart.destroy();
-
       const url = `https://api.binance.com/api/v3/klines?symbol=${selectedSymbol}&interval=1h&limit=50`;
       const res = await fetch(url);
       const data = await res.json();
-
-      const formattedData = data.map(d => ({
-        x: new Date(d[0]),
+      
+      const chartData = data.map(d => ({
+        t: new Date(d[0]),
         o: parseFloat(d[1]),
         h: parseFloat(d[2]),
         l: parseFloat(d[3]),
-        c: parseFloat(d[4]),
+        c: parseFloat(d[4])
       }));
 
       const ctx = document.getElementById('candleChart').getContext('2d');
+      if (candleChart) candleChart.destroy();
       candleChart = new Chart(ctx, {
         type: 'candlestick',
         data: {
           datasets: [{
-            label: `${selectedSymbol} Price`,
-            data: formattedData
+            label: selectedSymbol,
+            data: chartData
           }]
         },
         options: {
           responsive: true,
-          scales: {
-            x: {
-              type: 'time',
-              time: {
-                tooltipFormat: 'MMM dd, HH:mm',
-                unit: 'hour'
-              }
-            },
-            y: {
-              beginAtZero: false
-            }
-          },
           plugins: {
-            legend: {
-              display: false
+            title: {
+              display: true,
+              text: selectedSymbol + ' - 1 Hour Candlestick'
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false
             }
           }
         }
       });
-    }
-
-    function calculateLiq() {
-      const entryPrice = parseFloat(document.getElementById("entryPrice").value);
-      const margin = parseFloat(document.getElementById("margin").value);
-      const wallet = parseFloat(document.getElementById("wallet").value);
-      const leverage = parseFloat(document.getElementById("leverage").value);
-      const position = document.getElementById("position").value;
-      const marginType = document.getElementById("marginType").value;
-      const tpPrice = parseFloat(document.getElementById("tpPrice").value);
-
-      if (!entryPrice || !margin || !wallet || !leverage) return alert("Please fill all fields correctly");
-
-      const positionSize = margin * leverage;
-      const mmr = 0.005;
-      const maintenanceMargin = positionSize * mmr;
-
-      let liqPrice;
-      const walletToUse = marginType === "cross" ? wallet : 0;
-
-      if (position === "long") {
-        liqPrice = (positionSize * entryPrice) / (positionSize + walletToUse - maintenanceMargin);
-      } else {
-        liqPrice = (positionSize * entryPrice) / (positionSize - walletToUse + maintenanceMargin);
-      }
-
-      liqPrice = liqPrice * (1 - tradingFee);
-
-      let tpProfit = '';
-      if (tpPrice) {
-        if (position === "long") {
-          tpProfit = ((tpPrice - entryPrice) * (positionSize / entryPrice)).toFixed(2);
-        } else {
-          tpProfit = ((entryPrice - tpPrice) * (positionSize / entryPrice)).toFixed(2);
-        }
-        tpProfit = tpProfit * (1 - tradingFee);
-      }
-
-      document.getElementById("result").innerHTML = `
-        <strong style="color: red;">Estimated Liquidation Price:</strong> <span style="color: red;">$${liqPrice.toFixed(2)}</span><br>
-        ${tpPrice ? `<strong style="color: green;">Estimated Profit:</strong> <span style="color: green;">$${tpProfit}</span>` : ''}
-      `;
     }
 
     loadSymbols();
